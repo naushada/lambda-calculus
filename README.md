@@ -29,7 +29,7 @@ The same language is implemented twice, and `make compare` asserts they agree.
 | AST | tagged struct, `malloc`/`free` | `std::variant`, `unique_ptr` |
 | Build needs | flex, bison, cc | c++ only |
 
-[docs/CPP_DESIGN.md](docs/CPP_DESIGN.md) is the comparison: where the
+[docs/COMPARISON.md](docs/COMPARISON.md) is the comparison: where the
 difficulty moves, what hand-writing costs, and why the λ character alone is a
 strong argument against a byte-oriented scanner generator.
 
@@ -144,14 +144,25 @@ the "body extends as far right as possible" convention does not apply. Write
 
 ## Design notes
 
-- [docs/LEX_DESIGN.md](docs/LEX_DESIGN.md) — tokenisation. The interesting part
-  is §2.3: flex matches *bytes*, and λ is the two-byte sequence `0xCE 0xBB`, so
-  a naive `NAME` pattern silently swallows the binder. The fix keeps every other
-  Greek letter legal in identifiers.
-- [docs/YACC_DESIGN.md](docs/YACC_DESIGN.md) — the grammar. Three productions,
-  no precedence declarations, **0 shift/reduce and 0 reduce/reduce conflicts**.
-  §8 keeps the analysis for the conventional juxtaposition syntax (`f x y`),
-  which is not conflict-free without care.
+| | scanner | parser |
+|---|---|---|
+| flex/bison, C | [LEX_DESIGN.md](docs/LEX_DESIGN.md) | [YACC_DESIGN.md](docs/YACC_DESIGN.md) |
+| hand-written, C++ | [CPP_SCANNER_DESIGN.md](docs/CPP_SCANNER_DESIGN.md) | [CPP_PARSER_DESIGN.md](docs/CPP_PARSER_DESIGN.md) |
+| both | [COMPARISON.md](docs/COMPARISON.md) | |
+
+Highlights:
+
+- **LEX_DESIGN §2.3** — flex matches *bytes*, and λ is the two-byte sequence
+  `0xCE 0xBB`, so a naive `NAME` pattern silently swallows the binder. The fix
+  keeps every other Greek letter legal in identifiers.
+- **CPP_SCANNER_DESIGN §4** — the same rule with one character of lookahead,
+  and the three different lookahead mechanisms the hand-written scanner uses.
+- **YACC_DESIGN §2** — the grammar: three productions, no precedence
+  declarations, **0 shift/reduce and 0 reduce/reduce conflicts**. §8 keeps the
+  analysis for conventional juxtaposition syntax (`f x y`), which is not
+  conflict-free without care.
+- **CPP_PARSER_DESIGN §1** — why that same property makes the grammar LL(1),
+  and the parser generator optional.
 
 ## Status
 

@@ -1,5 +1,11 @@
 # Parser Design — Lambda Calculus (yacc / bison)
 
+> Parser design for the **bison** implementation in `src/parser.y`. The
+> recursive-descent C++ parser in `cpp/src/parser.cpp` is documented in
+> [CPP_PARSER_DESIGN.md](CPP_PARSER_DESIGN.md), and
+> [COMPARISON.md](COMPARISON.md) covers why both exist. The language-level
+> analysis below (§1 especially) applies to both.
+
 Companion to [LEX_DESIGN.md](LEX_DESIGN.md). The scanner hands up a flat token
 stream drawn from `{LAMBDA, DOT, LPAREN, RPAREN, NAME, NEWLINE, 0}`; this
 document turns that stream into an abstract syntax tree.

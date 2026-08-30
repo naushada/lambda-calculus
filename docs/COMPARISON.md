@@ -1,6 +1,13 @@
 # Two Front Ends: flex/bison vs. hand-written C++
 
-This repository implements the same language twice.
+This repository implements the same language twice. Design notes for each:
+
+| | scanner | parser |
+|---|---|---|
+| flex/bison, C | [LEX_DESIGN.md](LEX_DESIGN.md) | [YACC_DESIGN.md](YACC_DESIGN.md) |
+| hand-written, C++ | [CPP_SCANNER_DESIGN.md](CPP_SCANNER_DESIGN.md) | [CPP_PARSER_DESIGN.md](CPP_PARSER_DESIGN.md) |
+
+This document is the comparison between them.
 
 | | `src/` | `cpp/src/` |
 |---|---|---|

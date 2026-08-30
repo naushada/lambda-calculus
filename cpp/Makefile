@@ -1,6 +1,7 @@
 # Lambda calculus: hand-written scanner and recursive-descent parser in C++.
 # The flex/bison implementation of the same language lives in ../src.
-# Design notes: ../docs/CPP_DESIGN.md
+# Design notes: ../docs/CPP_SCANNER_DESIGN.md, ../docs/CPP_PARSER_DESIGN.md
+# Comparison with the flex/bison build: ../docs/COMPARISON.md
 
 CXX      ?= c++
 CXXFLAGS ?= -std=c++17 -O2

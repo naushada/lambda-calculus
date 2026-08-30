@@ -1,4 +1,10 @@
-# Lexical Analyser Design — Lambda Calculus
+# Lexical Analyser Design — Lambda Calculus (flex)
+
+> Scanner design for the **flex** implementation in `src/lexer.l`. The
+> hand-written C++ scanner in `cpp/src/lexer.cpp` is documented in
+> [CPP_SCANNER_DESIGN.md](CPP_SCANNER_DESIGN.md), and
+> [COMPARISON.md](COMPARISON.md) covers why both exist. The language-level
+> analysis below (§2 especially) applies to both.
 
 Scanner specification for the language
 
