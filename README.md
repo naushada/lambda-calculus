@@ -18,14 +18,34 @@ application  ::= '(' <function expression> <argument expression> ')'
 definition   ::= <name> = <expression>          (top level only)
 ```
 
+## Two implementations
+
+The same language is implemented twice, and `make compare` asserts they agree.
+
+| | `src/` | `cpp/src/` |
+|---|---|---|
+| Scanner | flex (`lexer.l`) | hand-written over `std::istream` |
+| Parser | bison LALR (`parser.y`) | recursive descent |
+| AST | tagged struct, `malloc`/`free` | `std::variant`, `unique_ptr` |
+| Build needs | flex, bison, cc | c++ only |
+
+[docs/CPP_DESIGN.md](docs/CPP_DESIGN.md) is the comparison: where the
+difficulty moves, what hand-writing costs, and why the λ character alone is a
+strong argument against a byte-oriented scanner generator.
+
 ## Build
 
 ```sh
-make          # build/lc
-make check    # 0-conflict check + 18 parse vectors + error-recovery test
+make            # build/lc      -- flex/bison, C
+make cpp        # cpp/build/lc  -- hand-written, C++
+make check      # C: 0-conflict check + the full suite
+make check-cpp  # C++: the same suite
+make compare    # 20 differential checks: the two must agree
+make check-all  # all of the above
 ```
 
-Builds with the stock macOS toolchain (bison 2.3) as well as modern bison/flex.
+The C build works with the stock macOS toolchain (bison 2.3); the C++ build
+needs only a C++17 compiler.
 
 ## Use
 

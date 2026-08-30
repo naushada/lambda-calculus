@@ -14,8 +14,23 @@ BIN    := $(BUILD)/lc
 GEN    := $(BUILD)/parser.tab.c $(BUILD)/lex.yy.c
 OWN    := $(SRC)/ast.c $(SRC)/env.c $(SRC)/eval.c $(SRC)/main.c
 
-.PHONY: all check conflicts clean
+.PHONY: all check conflicts clean cpp check-cpp check-all compare
 all: $(BIN)
+
+# The second implementation: hand-written scanner, recursive descent, C++.
+cpp:
+	@$(MAKE) -C cpp
+
+check-cpp:
+	@$(MAKE) -C cpp check
+
+# Both implementations against the same suite.
+check-all: check check-cpp compare
+
+# Prove the two implementations agree on the language.
+compare: $(BIN)
+	@$(MAKE) -s -C cpp
+	@tests/compare.sh $(BIN) cpp/$(BUILD)/lc
 
 $(BUILD):
 	@mkdir -p $(BUILD)
@@ -45,3 +60,4 @@ check: $(BIN) conflicts
 
 clean:
 	rm -rf $(BUILD)
+	@$(MAKE) -C cpp clean

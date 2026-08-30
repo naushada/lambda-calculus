@@ -30,6 +30,8 @@ int tok_line   = 1;   /* line of the token just returned         */
 static void lex_error(const char *fmt, ...)
 {
     va_list ap;
+    fflush(stdout);          /* keep diagnostics in step with results when
+                              * stdout is a pipe and thus block-buffered */
     fprintf(stderr, "line %d: ", yylineno);
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);

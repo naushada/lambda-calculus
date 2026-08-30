@@ -92,6 +92,7 @@ expr    : NAME                  { $$ = mk_var($1); }
 
 void yyerror(const char *msg)
 {
+    fflush(stdout);          /* see lex_error(): keep the two streams ordered */
     fprintf(stderr, "line %d: %s\n", tok_line, msg);
 }
 
