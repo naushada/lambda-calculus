@@ -1,0 +1,16 @@
+# Beta reduction, normal order.  Expected results in eval-expected.txt.
+λx.x
+(f x)
+(λx.x y)
+((λx.λy.x a) b)
+((λx.λy.y a) b)
+(λf.λx.(f (f x)) λy.y)
+((λf.λx.(f (f x)) λn.(n n)) q)
+(λn.λf.λx.(f ((n f) x)) λf.λx.(f x))
+λx.(λy.y x)   # NB: (λy.y) alone is not a valid bracket -- see YACC_DESIGN 1.1(a)
+# Capture: substituting the free y for x must rename the inner binder.
+# A naive substitution would wrongly yield (λy.(y y)).
+(λx.λy.(x y) y)
+((λx.λy.(x y) y) z)
+# Normal order reaches y even though the argument has no normal form.
+(λx.y (λx.(x x) λx.(x x)))

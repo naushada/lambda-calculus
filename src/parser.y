@@ -21,6 +21,10 @@
 int   yylex(void);
 void  yyerror(const char *msg);
 
+/* Supplied by the driver: what to do with a completed term.  Takes
+ * ownership of the node. */
+void  on_term(struct Node *term);
+
 extern int yylineno;
 extern int tok_line;
 extern int lex_errors;
@@ -52,8 +56,7 @@ program : /* empty */
         | program line
         ;
 
-line    : expr NEWLINE          { print_node($1); putchar('\n');
-                                  free_node($1); }
+line    : expr NEWLINE          { on_term($1); }
         | NEWLINE               { /* blank line */ }
         | error NEWLINE         { parse_errors++; yyerrok; }
         ;

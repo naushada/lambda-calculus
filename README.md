@@ -27,16 +27,56 @@ Builds with the stock macOS toolchain (bison 2.3) as well as modern bison/flex.
 
 ## Use
 
-```sh
-$ echo 'λx.(x y)' | ./build/lc
-(λx.(x y))
+One expression per line. By default each term is reduced to a normal form and
+printed fully parenthesised. `\` is accepted wherever `λ` is, for keyboards that
+cannot produce it; `#` starts a comment.
 
-$ echo '(λf.λx.(f (f x)) λy.y)' | ./build/lc
+```sh
+$ echo '(λf.λx.(f (f x)) λy.y)' | ./build/lc      # Church 2 applied to identity
+(λx.x)
+
+$ echo '(λf.λx.(f (f x)) λy.y)' | ./build/lc -p   # parse only, no reduction
 ((λf.(λx.(f (f x)))) (λy.y))
+
+$ echo '(λf.λx.(f (f x)) λy.y)' | ./build/lc -t   # trace every step
+    0  ((λf.(λx.(f (f x)))) (λy.y))
+    1  (λx.((λy.y) ((λy.y) x)))
+    2  (λx.((λy.y) x))
+    3  (λx.x)
+(λx.x)
 ```
 
-One expression per line; output is the fully parenthesised AST. `\` is accepted
-wherever `λ` is, for keyboards that cannot produce it. `#` starts a comment.
+```
+-p     parse only; print the AST without reducing
+-t     trace every reduction step
+-a     applicative order (default: normal order)
+-s N   step limit before giving up (default 10000)
+```
+
+### Reduction
+
+Substitution is capture-avoiding: it alpha-renames a binder when a naive
+substitution would capture a free variable.
+
+```sh
+$ echo '(λx.λy.(x y) y)' | ./build/lc
+(λy1.(y y1))            # not (λy.(y y)) — the free y must not be captured
+```
+
+Both strategies reduce under a binder, so both compute a full normal form.
+They are not interchangeable: normal order (leftmost-outermost) finds a normal
+form whenever one exists, while applicative order (leftmost-innermost) reduces
+arguments first and can diverge on a term that has one.
+
+```sh
+$ echo '(λx.y (λx.(x x) λx.(x x)))' | ./build/lc       # argument is unused
+y
+$ echo '(λx.y (λx.(x x) λx.(x x)))' | ./build/lc -a     # ...but evaluated anyway
+((λx.y) ((λx.(x x)) (λx.(x x))))   [no normal form after 10000 steps]
+```
+
+Reduction need not terminate, so `-s` bounds it; hitting the limit prints the
+term reached and exits non-zero.
 
 ## Two things that surprise people
 
@@ -63,5 +103,5 @@ the "body extends as far right as possible" convention does not apply. Write
 
 ## Status
 
-Scanner and parser only — the output is an AST. Evaluation (capture-avoiding
-substitution, β-reduction, a REPL) is not implemented; see YACC_DESIGN §10.
+Scanner, parser and evaluator. Not implemented: `let` bindings for named terms,
+eta reduction, and an interactive REPL (input is read as a plain stream).
