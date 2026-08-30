@@ -14,6 +14,7 @@ int  had_errors(void);
 static Strategy strategy   = NORMAL_ORDER;
 static long     step_limit = 10000;
 static int      parse_only = 0;
+static int      eta        = 0;
 static int      trace      = 0;
 static int      diverged   = 0;   /* any term hit the step limit */
 
@@ -58,7 +59,7 @@ void on_term(Node *term)
         putchar('\n');
     }
 
-    term = reduce(term, strategy, step_limit, trace, &steps, &status);
+    term = reduce(term, strategy, eta, step_limit, trace, &steps, &status);
 
     print_node(term);
     if (status == EVAL_LIMIT) {
@@ -77,6 +78,7 @@ static void usage(const char *prog, int code)
         "  -p     parse only; print the AST without reducing\n"
         "  -t     trace every reduction step\n"
         "  -a     applicative order (default: normal order)\n"
+        "  -e     also apply eta reduction: lambda x.(M x) -> M\n"
         "  -s N   step limit before giving up (default %ld)\n"
         "  file   input, one expression per line (default: stdin)\n",
         prog, step_limit);
@@ -92,6 +94,7 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "-p") == 0)      parse_only = 1;
         else if (strcmp(argv[i], "-t") == 0) trace = 1;
         else if (strcmp(argv[i], "-a") == 0) strategy = APPLICATIVE_ORDER;
+        else if (strcmp(argv[i], "-e") == 0) eta = 1;
         else if (strcmp(argv[i], "-n") == 0) strategy = NORMAL_ORDER;
         else if (strcmp(argv[i], "-h") == 0) usage(argv[0], 0);
         else if (strcmp(argv[i], "-s") == 0) {

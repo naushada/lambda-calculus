@@ -1,0 +1,26 @@
+# Eta reduction:  λx.(M x) -> M   provided x is not free in M.
+# Run with -e; without it every line below is already in normal form.
+
+λx.(f x)
+λx.λy.(x y)
+λf.λx.(f x)
+λx.λy.((f x) y)
+
+# The side condition is the whole rule.  In both of these x IS free in M, so
+# the abstraction uses its argument and the binder cannot be discarded.
+λx.(x x)
+λx.((f x) x)
+
+# Not an eta-redex at all: the argument is not the binder.
+λx.(f y)
+
+# The alpha-renamed binder from the capture test is an eta-redex, which is
+# exactly why eta is off by default -- it would erase the evidence.
+λy1.(y y1)
+
+# Eta fires before beta here: the body is an application whose argument is
+# the binder, and (λy.y) does not mention x.
+λx.(λy.y x)
+
+# Beta first, then nothing left to eta-reduce.
+(λx.(f x) g)

@@ -54,9 +54,10 @@ compare() {                 # compare <label> <flags> <file>
 printf 'x\316\273y\n\316\274\n\317\200r2\n\316\273\316\274.\316\274\n\316\n\316 x\nx\316\ny\nK=\316\273x.\316\273y.x\nx=y\nx+y\nx1\n1x\n' \
     > /tmp/lc-edge.lc
 
-for file in "$dir"/cases.lc "$dir"/eval.lc "$dir"/defs.lc "$dir"/errors.lc \
-            /tmp/lc-edge.lc; do
-    for flags in "-p" "-s 200" "-a -s 200" "-t -s 40"; do
+for file in "$dir"/cases.lc "$dir"/eval.lc "$dir"/defs.lc "$dir"/eta.lc \
+            "$dir"/errors.lc /tmp/lc-edge.lc; do
+    for flags in "-p" "-s 200" "-a -s 200" "-t -s 40" "-e -s 200" \
+                 "-e -a -s 200"; do
         compare "$(basename "$file") [$flags]" "$flags" "$file"
     done
 done

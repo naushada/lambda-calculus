@@ -72,6 +72,7 @@ $ echo '(λf.λx.(f (f x)) λy.y)' | ./build/lc -t   # trace every step
 -p     parse only; print the AST without expanding or reducing
 -t     trace every reduction step
 -a     applicative order (default: normal order)
+-e     also apply eta reduction: λx.(M x) → M
 -s N   step limit before giving up (default 10000)
 ```
 
@@ -104,6 +105,35 @@ three questions at once:
   definition of the same name: with `I = λx.x`, the term `λI.I` stays `(λI.I)`.
 
 Numerals cannot be named `0`, `1`, `2` — a name may not start with a digit.
+
+### Eta reduction
+
+`-e` additionally applies **η**: `λx.(M x) → M`, provided `x` is not free in
+`M`. It is off by default because it computes a *different* normal form, not a
+faster one.
+
+```sh
+$ echo 'λx.(f x)'    | ./build/lc -e     ->  f
+$ echo 'λx.λy.(x y)' | ./build/lc -e     ->  (λx.x)
+$ echo 'λf.λx.(f x)' | ./build/lc -e     ->  (λf.f)      # Church 1 is the identity
+```
+
+The side condition is the whole rule — without it the binder could be
+discarded from a function that actually uses its argument:
+
+```sh
+$ echo 'λx.(x x)'     | ./build/lc -e    ->  (λx.(x x))       # x is free in M
+$ echo 'λx.((f x) x)' | ./build/lc -e    ->  (λx.((f x) x))
+```
+
+Leaving η off by default is deliberate. The α-renamed binder produced by a
+capture-avoiding substitution is itself an η-redex, so a default-on η would
+quietly erase the evidence:
+
+```sh
+$ echo '(λx.λy.(x y) y)' | ./build/lc       ->  (λy1.(y y1))   # capture avoided
+$ echo '(λx.λy.(x y) y)' | ./build/lc -e    ->  y              # ...and then erased
+```
 
 ### Reduction
 
@@ -166,6 +196,6 @@ Highlights:
 
 ## Status
 
-Scanner, parser, evaluator and top-level definitions. Not implemented: eta
-reduction, and an interactive REPL — input is read as a plain stream, so
+Scanner, parser, evaluator with β and optional η, and top-level definitions.
+Not implemented: an interactive REPL — input is read as a plain stream, so
 definitions work in a script or a heredoc but there is no prompt.

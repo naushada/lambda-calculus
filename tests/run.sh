@@ -25,6 +25,23 @@ check "eval" "$(cat "$dir/eval-expected.txt")" "$out"
 
 # Every line but the last is malformed; the last must still parse, proving
 # error recovery resynchronises at the newline instead of cascading.
+printf 'eta reduction:    '
+out=$("$LC" -e -s 200 "$dir/eta.lc" 2>/dev/null)
+check "eta" "$(cat "$dir/eta-expected.txt")" "$out"
+
+# Eta is opt-in: without -e the same file must stay in beta normal form.
+# The capture-test binder is itself an eta-redex, so a default-on eta would
+# silently erase the evidence that substitution avoids capture.
+printf 'eta is opt-in:    '
+off=$("$LC" -s 200 "$dir/eta.lc" 2>/dev/null)
+on=$("$LC" -e -s 200 "$dir/eta.lc" 2>/dev/null)
+if [ "$off" != "$on" ] && [ "$(printf '%s' "$off" | grep -c .)" -gt 0 ]; then
+    echo "ok (default output differs from -e)"
+else
+    echo "FAIL (eta appears to be on by default)"
+    fail=1
+fi
+
 printf 'definitions:      '
 out=$("$LC" -s 200 "$dir/defs.lc" 2>/dev/null)
 check "defs" "$(cat "$dir/defs-expected.txt")" "$out"

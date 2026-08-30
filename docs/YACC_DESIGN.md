@@ -459,6 +459,8 @@ The parser's job ends at a well-formed tree. Items 1–3 below are implemented i
 3. **β-reduction** `(λx.M N) → M[x := N]`, plus a strategy: normal order
    (leftmost-outermost — terminates whenever any strategy does) vs. applicative
    order (arguments first, but diverges on some terms that have normal forms).
+   Optionally **η** as well, `λx.(M x) → M` when `x ∉ FV(M)` — a different
+   normal form rather than a faster one, so it is opt-in (`-e`).
 4. **A REPL** — `let` bindings for named terms, and a step limit so the Ω term
    from §5 does not hang the process. **Both implemented**: `line: NAME EQ expr
    NEWLINE` adds top-level definitions (still 0 conflicts — one token of

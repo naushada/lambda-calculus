@@ -150,7 +150,35 @@ static Node *beta(const Node *abs, const Node *arg)
     return substitute(abs->l, abs->name, arg);
 }
 
-Node *reduce_step(const Node *n, Strategy s)
+/* Eta: \x.(M x) -> M, provided x is not free in M.
+ *
+ * The side condition is the whole rule.  Without it \x.(x x) would collapse
+ * to x, which is a different function: the abstraction uses its argument
+ * twice, so discarding the binder changes meaning.  Returns NULL when the
+ * term is not an eta-redex. */
+static Node *try_eta(const Node *abs)
+{
+    const Node *body = abs->l;
+    StrSet      fv;
+    int         captured;
+
+    if (body->kind != N_APP || body->r->kind != N_VAR)
+        return NULL;
+    if (strcmp(body->r->name, abs->name) != 0)
+        return NULL;
+
+    set_init(&fv);
+    free_vars(body->l, &fv);
+    captured = set_has(&fv, abs->name);
+    set_free(&fv);
+
+    if (captured)
+        return NULL;             /* x occurs free in M: not an eta-redex */
+
+    return copy_node(body->l);
+}
+
+Node *reduce_step(const Node *n, Strategy s, int eta)
 {
     Node *step;
 
@@ -165,14 +193,24 @@ Node *reduce_step(const Node *n, Strategy s)
         return NULL;
 
     case N_ABS:
-        step = reduce_step(n->l, s);
-        return step ? mk_abs(strdup(n->name), step) : NULL;
+        /* Outermost first, mirroring how beta is ordered above. */
+        if (eta && s == NORMAL_ORDER && (step = try_eta(n)))
+            return step;
+
+        if ((step = reduce_step(n->l, s, eta)))
+            return mk_abs(strdup(n->name), step);
+
+        /* Innermost: the body is in normal form, so contract now. */
+        if (eta && s == APPLICATIVE_ORDER && (step = try_eta(n)))
+            return step;
+
+        return NULL;
 
     case N_APP:
         /* Leftmost: the function position before the argument position. */
-        if ((step = reduce_step(n->l, s)))
+        if ((step = reduce_step(n->l, s, eta)))
             return mk_app(step, copy_node(n->r));
-        if ((step = reduce_step(n->r, s)))
+        if ((step = reduce_step(n->r, s, eta)))
             return mk_app(copy_node(n->l), step);
         /* Innermost: both parts are in normal form, so contract now. */
         if (s == APPLICATIVE_ORDER && n->l->kind == N_ABS)
@@ -182,13 +220,13 @@ Node *reduce_step(const Node *n, Strategy s)
     return NULL;
 }
 
-Node *reduce(Node *term, Strategy s, long limit, int trace,
+Node *reduce(Node *term, Strategy s, int eta, long limit, int trace,
              long *steps, EvalStatus *status)
 {
     long n = 0;
 
     for (; n < limit; n++) {
-        Node *next = reduce_step(term, s);
+        Node *next = reduce_step(term, s, eta);
         if (!next) {
             *steps  = n;
             *status = EVAL_NORMAL_FORM;

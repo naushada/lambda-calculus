@@ -15,12 +15,12 @@ This document is the comparison between them.
 | Parser | `parser.y` — bison LALR | `parser.cpp` — recursive descent |
 | AST | tagged struct, `malloc`/`free` | `std::variant`, `unique_ptr` |
 | Language | C | C++17 |
-| Hand-written lines | 785 | 895 |
+| Hand-written lines | 832 | 941 |
 | Generated lines | ~3500 | 0 |
 | Build needs | flex, bison, cc | c++ only |
 
 Both binaries take the same flags and produce the same output.
-`make compare` runs 20 differential checks across every test file and flag
+`make compare` runs 36 differential checks across every test file and flag
 combination and asserts they agree — see §7.
 
 The interesting part is not that both work. It is *where* the difficulty moved.
@@ -207,7 +207,8 @@ error production rather than the generic handler.)*
 
 Two implementations of one language are only useful if they agree. `make
 compare` runs both binaries over every test file under `-p`, `-s 200`,
-`-a -s 200` and `-t -s 40`, plus a UTF-8 edge-case file, and checks:
+`-a -s 200`, `-t -s 40`, `-e -s 200` and `-e -a -s 200`, plus a UTF-8
+edge-case file, and checks:
 
 - **stdout** — byte for byte.
 - **exit status** — must match.
@@ -215,7 +216,7 @@ compare` runs both binaries over every test file under `-p`, `-s 200`,
   times. Wording is deliberately not compared, because §6 is a real advantage
   and forcing byte-equality there would mean making the C++ version worse.
 
-20 comparisons, all agreeing. Writing it immediately paid: it caught that the C
+36 comparisons, all agreeing. Writing it immediately paid: it caught that the C
 version's diagnostics jumped ahead of its results in a merged stream, because
 `stdout` is block-buffered when piped while `stderr` is not. `std::cerr` is
 tied to `std::cout` and flushes it, so the C++ version never had the problem.

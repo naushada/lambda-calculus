@@ -15,6 +15,7 @@ struct Options {
     long        step_limit = 10000;
     bool        parse_only = false;
     bool        trace      = false;
+    bool        eta        = false;
     std::string path;
 };
 
@@ -26,6 +27,7 @@ void usage(const char *prog, int code)
        << "  -p     parse only; print the AST without expanding or reducing\n"
        << "  -t     trace every reduction step\n"
        << "  -a     applicative order (default: normal order)\n"
+       << "  -e     also apply eta reduction: lambda x.(M x) -> M\n"
        << "  -s N   step limit before giving up (default 10000)\n"
        << "  file   input, one expression per line (default: stdin)\n";
     std::exit(code);
@@ -41,6 +43,7 @@ Options parse_args(int argc, char **argv)
         if      (a == "-p") o.parse_only = true;
         else if (a == "-t") o.trace      = true;
         else if (a == "-a") o.strategy   = Strategy::Applicative;
+        else if (a == "-e") o.eta        = true;
         else if (a == "-n") o.strategy   = Strategy::Normal;
         else if (a == "-h") usage(argv[0], 0);
         else if (a == "-s") {
@@ -116,7 +119,7 @@ int main(int argc, char **argv)
 
         long   steps  = 0;
         Status status = Status::NormalForm;
-        TermPtr result = reduce(std::move(expanded), opt.strategy,
+        TermPtr result = reduce(std::move(expanded), opt.strategy, opt.eta,
                                 opt.step_limit, opt.trace, steps, status,
                                 std::cout);
 

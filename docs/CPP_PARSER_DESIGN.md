@@ -286,10 +286,11 @@ implementations:
 
 ```
 18 parse vectors        -p, AST printed fully parenthesised
-12 reduction vectors    normal order
+12 reduction vectors    beta, normal order
+10 eta vectors          -e, including both side-condition cases
 19 definition vectors   shadowing, self-reference, rebinding, Church arithmetic
 error recovery          7 diagnostics in one run, good lines still parsed
-20 differential checks  stdout byte-identical to the bison implementation
+36 differential checks  stdout byte-identical to the bison implementation
 ```
 
 `make check-cpp` runs the suite; `make compare` runs the differential test.

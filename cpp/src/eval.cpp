@@ -42,6 +42,30 @@ TermPtr beta(const Abs &fn, const Term &arg)
     return substitute(*fn.body, fn.param, arg);
 }
 
+/* Eta: \x.(M x) -> M, provided x is not free in M.
+ *
+ * The side condition is the whole rule.  Without it \x.(x x) would collapse
+ * to x, which is a different function: the abstraction uses its argument
+ * twice, so discarding the binder changes meaning.  Returns nullptr when the
+ * term is not an eta-redex. */
+TermPtr try_eta(const Abs &abs)
+{
+    auto *body = std::get_if<App>(&abs.body->node);
+    if (!body)
+        return nullptr;
+
+    auto *arg = std::get_if<Var>(&body->arg->node);
+    if (!arg || arg->name != abs.param)
+        return nullptr;
+
+    NameSet fv;
+    free_vars(*body->fn, fv);
+    if (fv.count(abs.param))
+        return nullptr;          /* x occurs free in M: not an eta-redex */
+
+    return clone(*body->fn);
+}
+
 } // namespace
 
 TermPtr substitute(const Term &body, const std::string &name,
@@ -80,11 +104,23 @@ TermPtr substitute(const Term &body, const std::string &name,
     return mk_abs(std::move(z), substitute(*renamed, name, value));
 }
 
-TermPtr reduce_step(const Term &t, Strategy s)
+TermPtr reduce_step(const Term &t, Strategy s, bool eta)
 {
     if (auto *abs = std::get_if<Abs>(&t.node)) {
-        TermPtr step = reduce_step(*abs->body, s);
-        return step ? mk_abs(abs->param, std::move(step)) : nullptr;
+        /* Outermost first, mirroring how beta is ordered below. */
+        if (eta && s == Strategy::Normal)
+            if (TermPtr e = try_eta(*abs))
+                return e;
+
+        if (TermPtr step = reduce_step(*abs->body, s, eta))
+            return mk_abs(abs->param, std::move(step));
+
+        /* Innermost: the body is in normal form, so contract now. */
+        if (eta && s == Strategy::Applicative)
+            if (TermPtr e = try_eta(*abs))
+                return e;
+
+        return nullptr;
     }
 
     if (auto *ap = std::get_if<App>(&t.node)) {
@@ -94,9 +130,9 @@ TermPtr reduce_step(const Term &t, Strategy s)
                 return beta(*fn, *ap->arg);
 
         /* Leftmost: the function position before the argument position. */
-        if (TermPtr step = reduce_step(*ap->fn, s))
+        if (TermPtr step = reduce_step(*ap->fn, s, eta))
             return mk_app(std::move(step), clone(*ap->arg));
-        if (TermPtr step = reduce_step(*ap->arg, s))
+        if (TermPtr step = reduce_step(*ap->arg, s, eta))
             return mk_app(clone(*ap->fn), std::move(step));
 
         /* Innermost: both parts are in normal form, so contract now. */
@@ -108,13 +144,13 @@ TermPtr reduce_step(const Term &t, Strategy s)
     return nullptr;   /* a variable, or no redex anywhere below */
 }
 
-TermPtr reduce(TermPtr t, Strategy s, long limit, bool trace,
+TermPtr reduce(TermPtr t, Strategy s, bool eta, long limit, bool trace,
                long &steps, Status &status, std::ostream &os)
 {
     long n = 0;
 
     for (; n < limit; n++) {
-        TermPtr next = reduce_step(*t, s);
+        TermPtr next = reduce_step(*t, s, eta);
         if (!next) {
             steps  = n;
             status = Status::NormalForm;

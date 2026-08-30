@@ -9,6 +9,13 @@
  *
  * Both reduce under a binder, so both compute a full normal form.  Reduction
  * need not terminate, so every entry point takes a step limit.
+ *
+ * Eta reduction -- lambda x.(M x) -> M when x is not free in M -- is optional,
+ * and off by default.  It is a different normal form, not an optimisation:
+ * with it, lambda x.lambda y.(x y) collapses to lambda x.x, and
+ * lambda y1.(y y1) to y.  Leaving it off keeps beta normal forms intact
+ * (the second of those is what makes a capture-avoiding substitution
+ * visible), so the caller opts in.
  */
 #ifndef EVAL_H
 #define EVAL_H
@@ -27,9 +34,9 @@ TermPtr substitute(const Term &body, const std::string &name,
                    const Term &value);
 
 /* One reduction step, or nullptr if `t` is already in normal form. */
-TermPtr reduce_step(const Term &t, Strategy s);
+TermPtr reduce_step(const Term &t, Strategy s, bool eta = false);
 
-TermPtr reduce(TermPtr t, Strategy s, long limit, bool trace,
+TermPtr reduce(TermPtr t, Strategy s, bool eta, long limit, bool trace,
                long &steps, Status &status, std::ostream &os);
 
 #endif /* EVAL_H */
