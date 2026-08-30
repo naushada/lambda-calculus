@@ -224,8 +224,18 @@ Every error path loops back to the top rather than returning, which is why the
 
 ## 8. Verified token vectors
 
-Produced by a dump harness over the real `Lexer`. `|` separates tokens; a blank
-result means the line produced only a diagnostic.
+Produced by `cpp/build/lc-tokens`, which drives the real `Lexer` with no parser
+in the way:
+
+```sh
+make tokens                          # builds cpp/build/lc-tokens
+echo 'λx.x' | cpp/build/lc-tokens    # LAMBDA NAME(x) DOT NAME(x)
+cpp/build/lc-tokens -v file.lc       # one token per line, with line numbers
+```
+
+`tests/tokens.sh` regenerates the table below and compares, so this section
+cannot drift from the scanner. A blank result means the line produced only a
+diagnostic.
 
 ```
 x                 -> NAME(x)
@@ -267,5 +277,6 @@ int failures = lexer.errors();
 ```
 
 Construction takes the input stream and the stream diagnostics go to — nothing
-is hard-wired to `std::cin`/`std::cerr`, which is what makes the scanner
-testable in isolation and let the token vectors above be generated.
+is hard-wired to `std::cin`/`std::cerr`. That is what makes the scanner
+testable in isolation, and what `cpp/tools/dump.cpp` relies on: it is a second
+`main` over the same `Lexer`, linking `lexer.cpp` and nothing else.

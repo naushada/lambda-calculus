@@ -1,0 +1,17 @@
+# Scanner vectors, dumped by cpp/build/lc-tokens.
+# These are the table in docs/CPP_SCANNER_DESIGN.md §8; tests/tokens.sh
+# regenerates them, so the doc cannot drift from the scanner.
+x
+x1
+x+y
+x y z
+λx.x
+\x.x
+lambda
+μ
+πr2
+xλy
+(λf.f f)
+K=λx.λy.x
+x=y
+x   # comment

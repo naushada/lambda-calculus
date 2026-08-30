@@ -14,12 +14,16 @@ BIN    := $(BUILD)/lc
 GEN    := $(BUILD)/parser.tab.c $(BUILD)/lex.yy.c
 OWN    := $(SRC)/ast.c $(SRC)/env.c $(SRC)/eval.c $(SRC)/main.c
 
-.PHONY: all check conflicts clean cpp check-cpp check-all compare
+.PHONY: all check conflicts clean cpp check-cpp check-all compare tokens
 all: $(BIN)
 
 # The second implementation: hand-written scanner, recursive descent, C++.
 cpp:
 	@$(MAKE) -C cpp
+
+# Token dumper: the C++ scanner in isolation (cpp/build/lc-tokens).
+tokens:
+	@$(MAKE) -C cpp tokens
 
 check-cpp:
 	@$(MAKE) -C cpp check

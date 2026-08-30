@@ -40,8 +40,9 @@ make            # build/lc      -- flex/bison, C
 make cpp        # cpp/build/lc  -- hand-written, C++
 make check      # C: 0-conflict check + the full suite
 make check-cpp  # C++: the same suite
-make compare    # 20 differential checks: the two must agree
+make compare    # 36 differential checks: the two must agree
 make check-all  # all of the above
+make tokens     # cpp/build/lc-tokens -- the scanner in isolation
 ```
 
 The C build works with the stock macOS toolchain (bison 2.3); the C++ build

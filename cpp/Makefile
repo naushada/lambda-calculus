@@ -10,13 +10,14 @@ WARN     := -Wall -Wextra
 SRC   := src
 BUILD := build
 BIN   := $(BUILD)/lc
+TOKENS := $(BUILD)/lc-tokens
 
 SRCS  := $(SRC)/ast.cpp $(SRC)/lexer.cpp $(SRC)/parser.cpp \
          $(SRC)/eval.cpp $(SRC)/env.cpp $(SRC)/main.cpp
 HDRS  := $(SRC)/ast.h $(SRC)/lexer.h $(SRC)/parser.h \
          $(SRC)/eval.h $(SRC)/env.h
 
-.PHONY: all check clean
+.PHONY: all check clean tokens
 all: $(BIN)
 
 $(BUILD):
@@ -27,8 +28,15 @@ $(BIN): $(SRCS) $(HDRS) | $(BUILD)
 
 # The same suite the flex/bison build runs: identical language, identical
 # output, so the tests are the proof that the two implementations agree.
-check: $(BIN)
+# Scanner in isolation: prints the token stream, no parser in the way.
+tokens: $(TOKENS)
+
+$(TOKENS): tools/dump.cpp $(SRC)/lexer.cpp $(SRC)/lexer.h | $(BUILD)
+	$(CXX) $(CXXFLAGS) $(WARN) -I$(SRC) -o $@ tools/dump.cpp $(SRC)/lexer.cpp
+
+check: $(BIN) $(TOKENS)
 	@cd .. && tests/run.sh cpp/$(BIN)
+	@cd .. && tests/tokens.sh cpp/$(TOKENS)
 
 clean:
 	rm -rf $(BUILD)
