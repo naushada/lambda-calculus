@@ -14,6 +14,8 @@ name         ::= sequence of non-blank characters,
 function     ::= λ <name> . <body>
 body         ::= expression
 application  ::= '(' <function expression> <argument expression> ')'
+
+definition   ::= <name> = <expression>          (top level only)
 ```
 
 ## Build
@@ -47,11 +49,41 @@ $ echo '(λf.λx.(f (f x)) λy.y)' | ./build/lc -t   # trace every step
 ```
 
 ```
--p     parse only; print the AST without reducing
+-p     parse only; print the AST without expanding or reducing
 -t     trace every reduction step
 -a     applicative order (default: normal order)
 -s N   step limit before giving up (default 10000)
 ```
+
+### Definitions
+
+A top-level `name = expr` binds a name for later lines.
+
+```sh
+$ ./build/lc <<'EOF'
+zero = λf.λx.x
+succ = λn.λf.λx.(f ((n f) x))
+one  = (succ zero)
+two  = (succ one)
+plus = λm.λn.λf.λx.((m f) ((n f) x))
+((plus two) two)
+EOF
+...
+(λf.(λx.(f (f (f (f x))))))          # Church 4
+```
+
+The right-hand side is expanded **when the definition is made**, which settles
+three questions at once:
+
+- A name cannot refer to itself, so expansion always terminates — there is no
+  cycle check because a cycle cannot be built. Recursion is available the usual
+  way, through a fixed-point combinator (`Y = λf.(λx.(f (x x)) λx.(f (x x)))`).
+- Rebinding a name does not reach back into terms already built from the old
+  definition.
+- Only **free** occurrences are expanded, so a lambda binder shadows a
+  definition of the same name: with `I = λx.x`, the term `λI.I` stays `(λI.I)`.
+
+Numerals cannot be named `0`, `1`, `2` — a name may not start with a digit.
 
 ### Reduction
 
@@ -103,5 +135,6 @@ the "body extends as far right as possible" convention does not apply. Write
 
 ## Status
 
-Scanner, parser and evaluator. Not implemented: `let` bindings for named terms,
-eta reduction, and an interactive REPL (input is read as a plain stream).
+Scanner, parser, evaluator and top-level definitions. Not implemented: eta
+reduction, and an interactive REPL — input is read as a plain stream, so
+definitions work in a script or a heredoc but there is no prompt.

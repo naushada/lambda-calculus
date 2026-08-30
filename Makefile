@@ -12,7 +12,7 @@ BUILD  := build
 BIN    := $(BUILD)/lc
 
 GEN    := $(BUILD)/parser.tab.c $(BUILD)/lex.yy.c
-OWN    := $(SRC)/ast.c $(SRC)/eval.c $(SRC)/main.c
+OWN    := $(SRC)/ast.c $(SRC)/env.c $(SRC)/eval.c $(SRC)/main.c
 
 .PHONY: all check conflicts clean
 all: $(BIN)
@@ -28,7 +28,7 @@ $(BUILD)/parser.tab.c $(BUILD)/parser.tab.h: $(SRC)/parser.y | $(BUILD)
 $(BUILD)/lex.yy.c: $(SRC)/lexer.l $(BUILD)/parser.tab.h | $(BUILD)
 	$(FLEX) -o $@ $(SRC)/lexer.l
 
-$(BIN): $(GEN) $(OWN) $(SRC)/ast.h $(SRC)/eval.h
+$(BIN): $(GEN) $(OWN) $(SRC)/ast.h $(SRC)/env.h $(SRC)/eval.h
 	$(CC) $(CFLAGS) $(WARN) -I$(SRC) -I$(BUILD) -o $@ $(GEN) $(OWN)
 
 # The grammar is conflict-free by construction (YACC_DESIGN 2); any conflict

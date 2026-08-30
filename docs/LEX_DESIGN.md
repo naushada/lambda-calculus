@@ -65,7 +65,8 @@ So the character universe is partitioned first, and `NAME` is defined as
 | `DELIM` | `.` `(` `)` | structural punctuation, each is its own token |
 | `BINDER` | **λ** (U+03BB = `0xCE 0xBB`), `\` | binder introducer |
 | `DIGIT` | `0`–`9` | legal inside a name, illegal as its first character |
-| `IDCHAR` | every other printable byte: letters, `_`, `+ - * / < > = ! ? @ # $ % ^ & ~ ' " ,`, **and every non-λ multi-byte UTF-8 character** | name body |
+| `EQ` | `=` | binds a top-level definition; excluded from names |
+| `IDCHAR` | every other printable byte: letters, `_`, `+ - * / < > ! ? @ # $ % ^ & ~ ' " ,`, **and every non-λ multi-byte UTF-8 character** | name body |
 | `BAD` | control bytes, DEL, a stray `0xCE` | error |
 
 Parentheses are part of the grammar: an application is written
@@ -153,6 +154,7 @@ every real language does and it keeps the error messages sane.
 | `x1` | `NAME(x1)` | digits allowed after the first char |
 | `1x` | `ERROR` | `IDSTART` rejects `1`; caught by the `{DIGIT}{IDCHAR}*` error rule |
 | `x+y` | `NAME(x+y)` | `+` is an `IDCHAR`; there is no arithmetic in λ-calculus |
+| `x=y` | `NAME(x) EQ NAME(y)` | `=` is *not* an `IDCHAR` — it binds a definition |
 | `x y` | `NAME(x) NAME(y)` | blank separates → parser sees an application |
 | `λx.x` | `LAMBDA NAME(x) DOT NAME(x)` | λ is a delimiter, so munch stops before it |
 | `λλ` | `LAMBDA LAMBDA` | never one name |
@@ -438,8 +440,11 @@ Open questions deliberately deferred to the yacc design:
   (`LAMBDA namelist DOT`), not a scanner change. **Confirmed in YACC_DESIGN §8:
   implemented entirely in the grammar, zero scanner changes.**
 - Top-level definitions (`id = expr`) — would need `=` promoted out of `IDCHAR`
-  into its own token. Noted here because it is the one likely future change that
-  touches this file.
+  into its own token. **Implemented.** `=` is now excluded from `NOTCE`/`NOTCE0`
+  and has its own `EQ` rule, so `K=λx.λy.x` needs no spaces. This was the one
+  predicted future change that touched this file, and it was exactly one
+  character in two character classes plus one rule. The cost: `=` is no longer
+  legal inside a name, so `x=y` lexes as three tokens rather than one.
 - Statement termination in a REPL — whether `\n` becomes a token or stays
   discarded. **Resolved in [YACC_DESIGN.md](YACC_DESIGN.md) §6: it becomes a
   token.** The parser needs a resynchronisation terminal for `error NEWLINE`

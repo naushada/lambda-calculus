@@ -1,0 +1,34 @@
+# Top-level definitions.  Expected results in defs-expected.txt.
+I = λx.x
+(I y)
+
+# Church arithmetic.  Numerals cannot be named 0/1/2 -- a name may not start
+# with a digit (LEX_DESIGN 2.4).
+zero = λf.λx.x
+succ = λn.λf.λx.(f ((n f) x))
+one  = (succ zero)
+two  = (succ one)
+plus = λm.λn.λf.λx.((m f) ((n f) x))
+((plus two) two)
+
+# A lambda binder shadows a definition of the same name: only FREE
+# occurrences are expanded.
+λI.I
+(I I)
+
+# A definition's right-hand side is expanded when the definition is made, so
+# a name cannot refer to itself and expansion always terminates.
+f = (f x)
+(f y)
+
+# Same reason: rebinding a name does not reach back into terms already built
+# from the old definition.
+a = p
+b = (a q)
+a = z
+b
+(a q)
+
+# `=` is its own token now, so no spaces are needed around it.
+K=λx.λy.x
+((K m) n)   # not (K a b) -- a is defined above, and would expand

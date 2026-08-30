@@ -443,8 +443,8 @@ and AST direction are allowed to differ.
 
 ## 10. What comes after parsing
 
-The parser's job ends at a well-formed tree. Items 1–3 below are now
-implemented in `src/eval.c`; item 4 is not.
+The parser's job ends at a well-formed tree. Items 1–3 below are implemented in
+`src/eval.c`, and the definitions half of item 4 in `src/env.c`.
 
 1. **Free/bound variable analysis** — a walk computing `FV(e)`.
 2. **Capture-avoiding substitution** `e[x := v]` — the one genuinely subtle
@@ -454,7 +454,11 @@ implemented in `src/eval.c`; item 4 is not.
    (leftmost-outermost — terminates whenever any strategy does) vs. applicative
    order (arguments first, but diverges on some terms that have normal forms).
 4. **A REPL** — `let` bindings for named terms, and a step limit so the Ω term
-   from §5 does not hang the process.
+   from §5 does not hang the process. **Both implemented**: `line: NAME EQ expr
+   NEWLINE` adds top-level definitions (still 0 conflicts — one token of
+   lookahead after `NAME` separates a definition from a bare expression), and
+   `-s` bounds reduction. An *interactive* REPL, with a prompt and readline, is
+   not.
 
 Item 2 is where the real difficulty of an evaluator lives, and it played out as
 predicted: `substitute()` alpha-renames a binder whenever the value being

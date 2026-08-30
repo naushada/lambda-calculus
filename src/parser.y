@@ -6,6 +6,7 @@
  *   function    ::= lambda <name> . <body>
  *   body        ::= expression
  *   application ::= '(' <function expression> <argument expression> ')'
+ *   definition  ::= <name> = <expression>       (top level only)
  *
  * Application is explicitly parenthesised and binary, which is what makes the
  * grammar unambiguous with no precedence declarations at all: every
@@ -25,6 +26,9 @@ void  yyerror(const char *msg);
  * ownership of the node. */
 void  on_term(struct Node *term);
 
+/* Supplied by the driver: bind a top-level name.  Takes ownership of both. */
+void  on_define(char *name, struct Node *term);
+
 extern int yylineno;
 extern int tok_line;
 extern int lex_errors;
@@ -38,7 +42,7 @@ int parse_errors = 0;
 }
 
 %token <sval> NAME
-%token LAMBDA DOT LPAREN RPAREN NEWLINE
+%token LAMBDA DOT LPAREN RPAREN NEWLINE EQ
 
 %type <node> expr
 
@@ -57,6 +61,11 @@ program : /* empty */
         ;
 
 line    : expr NEWLINE          { on_term($1); }
+
+          /* A top-level definition.  One token of lookahead separates this
+           * from `expr: NAME` -- EQ means a definition, anything else means
+           * the name was an expression on its own. */
+        | NAME EQ expr NEWLINE  { on_define($1, $3); }
         | NEWLINE               { /* blank line */ }
         | error NEWLINE         { parse_errors++; yyerrok; }
         ;

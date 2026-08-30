@@ -10,6 +10,10 @@
  * trailing range [\x80-\xba\xbc-\xbf] is exactly "a UTF-8 continuation byte
  * that is not 0xBB", which also makes a truncated 0xCE fail and be reported
  * rather than absorbed into a name.
+ *
+ * `=` is excluded from names so that top-level definitions (`id = expr`) can
+ * be written without spaces.  This was the change LEX_DESIGN 8 predicted; it
+ * is the only reason `=` is not an ordinary name character.
  */
 %{
 #include <stdarg.h>
@@ -44,8 +48,8 @@ static void lex_error(const char *fmt, ...)
 
 DIGIT     [0-9]
 CEOK      \xce[\x80-\xba\xbc-\xbf]
-NOTCE     [^ \t\r\f\v\n.()\\\xce]
-NOTCE0    [^0-9 \t\r\f\v\n.()\\\xce]
+NOTCE     [^ \t\r\f\v\n.()\\=\xce]
+NOTCE0    [^0-9 \t\r\f\v\n.()\\=\xce]
 
 IDSTART   {NOTCE0}|{CEOK}
 IDCHAR    {NOTCE}|{CEOK}
@@ -66,6 +70,7 @@ BADNAME   {DIGIT}{IDCHAR}*
 "\\"            { TOK(LAMBDA); }
 
   /* --- punctuation --- */
+"="             { TOK(EQ); }
 "."             { TOK(DOT); }
 "("             { TOK(LPAREN); }
 ")"             { TOK(RPAREN); }

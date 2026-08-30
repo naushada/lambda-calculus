@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "ast.h"
+#include "env.h"
 #include "eval.h"
 
 extern FILE *yyin;
@@ -16,7 +17,23 @@ static int      parse_only = 0;
 static int      trace      = 0;
 static int      diverged   = 0;   /* any term hit the step limit */
 
-/* Called by the parser once per successfully parsed line. */
+/* Called by the parser for a top-level `name = expr` line.  The right-hand
+ * side is expanded now, so the stored term is self-contained and lookup can
+ * never recurse. */
+void on_define(char *name, Node *term)
+{
+    Node *expanded = env_expand(term);
+    free_node(term);
+
+    if (!parse_only) {
+        printf("%s = ", name);
+        print_node(expanded);
+        putchar('\n');
+    }
+    env_define(name, expanded);
+}
+
+/* Called by the parser once per successfully parsed expression line. */
 void on_term(Node *term)
 {
     long       steps;
@@ -27,6 +44,12 @@ void on_term(Node *term)
         putchar('\n');
         free_node(term);
         return;
+    }
+
+    {
+        Node *expanded = env_expand(term);
+        free_node(term);
+        term = expanded;
     }
 
     if (trace) {
@@ -50,6 +73,7 @@ static void usage(const char *prog, int code)
 {
     fprintf(code ? stderr : stdout,
         "usage: %s [-p] [-t] [-a] [-s N] [file]\n"
+        "  reads `expr` lines and `name = expr` definitions\n"
         "  -p     parse only; print the AST without reducing\n"
         "  -t     trace every reduction step\n"
         "  -a     applicative order (default: normal order)\n"
@@ -92,6 +116,7 @@ int main(int argc, char **argv)
     }
 
     yyparse();
+    env_free();
 
     if (path)
         fclose(yyin);

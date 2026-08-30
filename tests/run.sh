@@ -25,6 +25,10 @@ check "eval" "$(cat "$dir/eval-expected.txt")" "$out"
 
 # Every line but the last is malformed; the last must still parse, proving
 # error recovery resynchronises at the newline instead of cascading.
+printf 'definitions:      '
+out=$("$LC" -s 200 "$dir/defs.lc" 2>/dev/null)
+check "defs" "$(cat "$dir/defs-expected.txt")" "$out"
+
 printf 'error recovery:   '
 out=$("$LC" -p "$dir/errors.lc" 2>/dev/null); rc=$?
 n=$("$LC" -p "$dir/errors.lc" 2>&1 >/dev/null | grep -c 'line ')

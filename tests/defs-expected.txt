@@ -1,0 +1,19 @@
+I = (λx.x)
+y
+zero = (λf.(λx.x))
+succ = (λn.(λf.(λx.(f ((n f) x)))))
+one = ((λn.(λf.(λx.(f ((n f) x))))) (λf.(λx.x)))
+two = ((λn.(λf.(λx.(f ((n f) x))))) ((λn.(λf.(λx.(f ((n f) x))))) (λf.(λx.x))))
+plus = (λm.(λn.(λf.(λx.((m f) ((n f) x))))))
+(λf.(λx.(f (f (f (f x))))))
+(λI.I)
+(λx.x)
+f = (f x)
+((f x) y)
+a = p
+b = (p q)
+a = z
+(p q)
+(z q)
+K = (λx.(λy.x))
+m
