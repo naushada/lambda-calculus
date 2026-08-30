@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "ast.h"
 #include "env.h"
@@ -10,6 +11,14 @@
 extern FILE *yyin;
 int  yyparse(void);
 int  had_errors(void);
+
+/* Scanning a string rather than a stream, for the REPL.  Declared by hand so
+ * main.c does not have to include the generated scanner's header. */
+typedef struct yy_buffer_state *YY_BUFFER_STATE;
+YY_BUFFER_STATE yy_scan_string(const char *str);
+void            yy_delete_buffer(YY_BUFFER_STATE buf);
+extern int      yylineno;
+extern int      tok_line;
 
 static Strategy strategy   = NORMAL_ORDER;
 static long     step_limit = 10000;
@@ -70,11 +79,66 @@ void on_term(Node *term)
     free_node(term);
 }
 
+/* Interactive loop.
+ *
+ * Reads a whole line, then scans that string, rather than letting yyparse
+ * pull tokens straight from stdin.  The parser holds a lookahead token, so
+ * pulling from the terminal would mean blocking for the *next* line before
+ * the current one's result could be printed.  Feeding it a finished line
+ * sidesteps that without touching the grammar, and leaves the batch path --
+ * and everything the test suite checks -- untouched.
+ *
+ * The definition table is global and outlives the loop, so definitions
+ * persist between prompts. */
+static void repl(void)
+{
+    char  *line = NULL;
+    size_t cap  = 0;
+    int    lineno = 1;
+
+    puts("lambda calculus -- one expression per line, Ctrl-D to exit");
+
+    for (;;) {
+        ssize_t n;
+        char   *buf;
+
+        fputs("\xce\xbb> ", stdout);          /* λ> */
+        fflush(stdout);
+
+        n = getline(&line, &cap, stdin);
+        if (n < 0)
+            break;                              /* Ctrl-D */
+
+        /* The grammar terminates a line with a newline; getline drops it at
+         * end of file without one. */
+        buf = malloc((size_t)n + 2);
+        if (!buf)
+            break;
+        memcpy(buf, line, (size_t)n);
+        if (n == 0 || buf[n - 1] != '\n')
+            buf[n++] = '\n';
+        buf[n] = '\0';
+
+        yylineno = tok_line = lineno;
+        {
+            YY_BUFFER_STATE b = yy_scan_string(buf);
+            yyparse();
+            yy_delete_buffer(b);
+        }
+        free(buf);
+        lineno++;
+    }
+
+    free(line);
+    putchar('\n');                             /* past the prompt */
+}
+
 static void usage(const char *prog, int code)
 {
     fprintf(code ? stderr : stdout,
-        "usage: %s [-p] [-t] [-a] [-s N] [file]\n"
+        "usage: %s [-p] [-t] [-a] [-e] [-s N] [file]\n"
         "  reads `expr` lines and `name = expr` definitions\n"
+        "  with no file and a terminal on stdin, starts an interactive REPL\n"
         "  -p     parse only; print the AST without reducing\n"
         "  -t     trace every reduction step\n"
         "  -a     applicative order (default: normal order)\n"
@@ -108,6 +172,14 @@ int main(int argc, char **argv)
         else if (argv[i][0] == '-')          usage(argv[0], 2);
         else if (path)                       usage(argv[0], 2);
         else                                 path = argv[i];
+    }
+
+    /* A prompt only when someone is there to read it: piping or redirecting
+     * must produce byte-identical output to before. */
+    if (!path && isatty(STDIN_FILENO)) {
+        repl();
+        env_free();
+        return (had_errors() || diverged) ? 1 : 0;
     }
 
     if (path) {

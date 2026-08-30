@@ -50,6 +50,31 @@ needs only a C++17 compiler.
 
 ## Use
 
+### Interactive
+
+Run with no file and a terminal on stdin and you get a prompt. Definitions
+persist across entries; Ctrl-D exits.
+
+```
+$ ./build/lc
+lambda calculus -- one expression per line, Ctrl-D to exit
+λ> (f x)
+(f x)
+λ> I = λx.x
+I = (λx.x)
+λ> (I y)
+y
+λ> (f)
+line 5: an application needs two expressions: (function argument)
+λ> ^D
+```
+
+The prompt appears **only** on a terminal — piping or redirecting produces
+exactly the same output as before, which is what lets the same binary be used
+in scripts and in the test suite.
+
+### Batch
+
 One expression per line. By default each term is reduced to a normal form and
 printed fully parenthesised. `\` is accepted wherever `λ` is, for keyboards that
 cannot produce it; `#` starts a comment.
@@ -197,6 +222,6 @@ Highlights:
 
 ## Status
 
-Scanner, parser, evaluator with β and optional η, and top-level definitions.
-Not implemented: an interactive REPL — input is read as a plain stream, so
-definitions work in a script or a heredoc but there is no prompt.
+Complete for what it set out to do: scanner, parser, evaluator with β and
+optional η, top-level definitions, and an interactive REPL — in two
+independent implementations that the test suite proves agree.

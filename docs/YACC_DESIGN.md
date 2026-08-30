@@ -462,11 +462,14 @@ The parser's job ends at a well-formed tree. Items 1–3 below are implemented i
    Optionally **η** as well, `λx.(M x) → M` when `x ∉ FV(M)` — a different
    normal form rather than a faster one, so it is opt-in (`-e`).
 4. **A REPL** — `let` bindings for named terms, and a step limit so the Ω term
-   from §5 does not hang the process. **Both implemented**: `line: NAME EQ expr
+   from §5 does not hang the process. **Implemented**: `line: NAME EQ expr
    NEWLINE` adds top-level definitions (still 0 conflicts — one token of
-   lookahead after `NAME` separates a definition from a bare expression), and
-   `-s` bounds reduction. An *interactive* REPL, with a prompt and readline, is
-   not.
+   lookahead after `NAME` separates a definition from a bare expression), `-s`
+   bounds reduction, and running with a terminal on stdin gives a prompt.
+   The REPL reads a whole line and scans *that string* rather than letting
+   `yyparse` pull from stdin, because the parser's lookahead token would
+   otherwise block for the next line before the current result could print.
+   Line editing and history (readline) are not implemented.
 
 Item 2 is where the real difficulty of an evaluator lives, and it played out as
 predicted: `substitute()` alpha-renames a binder whenever the value being

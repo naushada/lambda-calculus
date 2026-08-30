@@ -15,7 +15,7 @@ This document is the comparison between them.
 | Parser | `parser.y` — bison LALR | `parser.cpp` — recursive descent |
 | AST | tagged struct, `malloc`/`free` | `std::variant`, `unique_ptr` |
 | Language | C | C++17 |
-| Hand-written lines | 832 | 941 |
+| Hand-written lines | 904 | 1000 |
 | Generated lines | ~3500 | 0 |
 | Build needs | flex, bison, cc | c++ only |
 

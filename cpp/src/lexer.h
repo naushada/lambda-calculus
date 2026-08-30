@@ -37,7 +37,10 @@ struct Token {
 
 class Lexer {
 public:
-    Lexer(std::istream &in, std::ostream &err) : in_(in), err_(err) {}
+    /* `first_line` lets a caller that feeds the scanner one line at a time --
+     * the REPL -- keep diagnostics numbered against the whole session. */
+    Lexer(std::istream &in, std::ostream &err, int first_line = 1)
+        : in_(in), err_(err), line_(first_line) {}
 
     Token next();
     int   errors() const { return errors_; }
@@ -54,7 +57,7 @@ private:
     std::ostream        &err_;
     std::optional<Token> pending_;   /* produced when a name ends at a lambda */
     std::optional<int>   held_;      /* one-character pushback, ours not the stream's */
-    int                  line_   = 1;
+    int                  line_;
     int                  errors_ = 0;
 };
 
