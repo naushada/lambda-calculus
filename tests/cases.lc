@@ -1,0 +1,19 @@
+# Verified vectors from docs/YACC_DESIGN.md 5.
+x
+(f x)
+((f x) y)
+(f (x y))
+λx.x
+λx.(x y)
+(λx.x y)
+λx.λy.x
+λx.λy.(x y)
+(λx.x λy.y)
+((λx.x λy.y) z)
+(λf.λx.(f (f x)) λy.y)
+(λx.(x x) λx.(x x))
+lambda
+x1
+πr2
+\x.x
+x   # trailing comment
