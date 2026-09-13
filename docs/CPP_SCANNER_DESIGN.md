@@ -132,7 +132,100 @@ loop, so the path is exercised even when a diagnostic intervenes.
 
 ---
 
-## 5. `int`, never `char`
+## 5. Memory layout
+
+`Token` is 32 bytes and `Lexer` is 72, both 8-byte aligned, on LP64 targets
+(x86-64 and arm64, libc++ or libstdc++). Offsets below were measured against
+the real header, not derived.
+
+```
+Token (32)                          Lexer (72)
+ off sz  member                      off sz  member
+   0  4  kind   enum class Tok         0  8  in_       istream&  (a pointer)
+   4  4  line   int                    8  8  err_      ostream&
+   8 24  text   std::string           16 40  pending_  optional<Token>
+                                      56  8  held_     optional<int>
+ no padding, internal or tail        64  4  line_
+                                      68  4  errors_
+                                    no padding, internal or tail
+```
+
+### 5.1 The rules that produce those numbers
+
+Five rules, from the Itanium C++ ABI that both AArch64 and x86-64 SysV follow:
+
+1. **A scalar's alignment equals its size.** On LP64: `char` 1, `short` 2,
+   `int` 4, pointer 8. `enum class Tok` has underlying type `int`, so 4. A
+   reference member is a pointer, so 8.
+2. **A struct's alignment is the largest alignment among its members.** Token
+   and Lexer both contain an 8-aligned member, so both are 8-aligned.
+3. **Members are laid out in declaration order.** C++ requires that members
+   with the same access control be allocated with increasing addresses, so
+   the compiler may *not* reorder them to save space. This is the rule that
+   makes hand-reordering a real technique rather than a micro-optimisation
+   the compiler already did.
+4. **Each member starts at the next offset that is a multiple of its own
+   alignment.** Any gap skipped to reach it is *internal* padding.
+5. **The total size is rounded up to a multiple of the struct's own
+   alignment.** That is *tail* padding, and it is not waste: it makes arrays
+   work. Element `i` of `T[]` lives at `i * sizeof(T)`, so every element is
+   correctly aligned only if the size is a multiple of the alignment.
+
+### 5.2 Why the original Token wasted eight bytes
+
+The first version declared `kind, text, line` — the two 4-byte fields split
+by the 24-byte one. Both padding rules then fire:
+
+```
+ off sz  member                       off sz  member
+   0  4  kind                           0  4  kind
+   4  4  ---- padding ----  rule 4      4  4  line
+   8 24  text                           8 24  text
+  32  4  line                                          = 32, no padding
+  36  4  ---- padding ----  rule 5
+                            = 40
+```
+
+Rule 4 inserts four bytes because `text` is 8-aligned and offset 4 is not a
+multiple of 8. Rule 5 then adds four more because the raw 36 must round up
+to a multiple of 8. Pairing the ints costs nothing and removes both gaps.
+
+The usable heuristic is not "largest member first" but **keep members of the
+same alignment adjacent** — don't split a run of small fields with a large
+one. Here `text, kind, line` would also have come to 32; `kind, line, text`
+was chosen because it additionally reads in token order.
+
+Shrinking `Token` is what shrank `Lexer`, since `Lexer` holds one inside
+`pending_`. Its own member list obeys the same rules with nothing left over:
+`held_` lands at 56, already a multiple of its 4-byte alignment, and the raw
+72 is already a multiple of 8. No reordering of the six members removes a
+byte.
+
+### 5.3 The padding that remains, and why it stays
+
+`Lexer` has 10 bytes of slack, all of it *inside* the two optionals, where
+rule 5 applies one level down. `std::optional<T>` is laid out as the payload
+followed by an engaged flag:
+
+```
+optional<Token> (40)                optional<int> (8)
+   0 32  the Token                     0  4  the int
+  32  1  engaged flag                  4  1  engaged flag
+  33  7  ---- tail padding ----  r.5    5  3  ---- tail padding ----  r.5
+```
+
+Rule 3 does not help here: those fields belong to the standard library, not
+to this header. Recovering the 10 bytes means dropping the optionals for
+sentinels — `int held_ = EOF`, and `kind == Tok::End` standing for "nothing
+pending". That trades a type-enforced *empty* for space this class does not
+need: the driver and the REPL each construct exactly one `Lexer`, and it
+allocates nothing over its lifetime (§4's `pending_` only ever holds a λ,
+whose `text` is empty and stays in the string's inline buffer). `Token` is
+the type worth packing, because one is copied and moved per token scanned.
+
+---
+
+## 6. `int`, never `char`
 
 ```
 plain char '\xCE' == 0xCE ?  NO      (clang: comparison is always false)
@@ -154,7 +247,7 @@ surface a byte to C code — this is a cost of hand-writing, paid once.
 
 ---
 
-## 6. Errors and line tracking
+## 7. Errors and line tracking
 
 `error()` writes `line N: message` to the supplied `std::ostream` and bumps a
 counter; the driver's exit status reflects `Lexer::errors()`. The scanner never
@@ -180,7 +273,7 @@ action runs; here the counter is simply incremented in the right place.
 
 ---
 
-## 7. The scanning loop
+## 8. The scanning loop
 
 ```mermaid
 flowchart TD
@@ -222,7 +315,7 @@ Every error path loops back to the top rather than returning, which is why the
 
 ---
 
-## 8. Verified token vectors
+## 9. Verified token vectors
 
 Produced by `cpp/build/lc-tokens`, which drives the real `Lexer` with no parser
 in the way:
@@ -267,7 +360,7 @@ all scan cleanly. It validates bytes, never syntax; that is the parser's job.
 
 ---
 
-## 9. Interface
+## 10. Interface
 
 ```cpp
 Lexer lexer(std::cin, std::cerr);

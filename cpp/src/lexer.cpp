@@ -79,7 +79,7 @@ Token Lexer::scan_name(int first)
         if (c == LAMBDA_LEAD) {
             int d = get();
             if (d == LAMBDA_TAIL) {
-                pending_ = Token{Tok::Lambda, "", line_};
+                pending_ = Token{Tok::Lambda, line_};
                 break;
             }
             if (!is_continuation(d)) {
@@ -98,7 +98,7 @@ Token Lexer::scan_name(int first)
         c = get();
     }
 
-    return Token{Tok::Name, std::move(text), start_line};
+    return Token{Tok::Name, start_line, std::move(text)};
 }
 
 Token Lexer::next()
@@ -113,13 +113,13 @@ Token Lexer::next()
         int c = get();
 
         if (c == EOF)
-            return Token{Tok::End, "", line_};
+            return Token{Tok::End, line_};
 
         if (is_blank(c))
             continue;
 
         if (c == '\n') {
-            Token t{Tok::Newline, "", line_};
+            Token t{Tok::Newline, line_};
             line_++;                      /* the token reports the line it ends */
             return t;
         }
@@ -131,18 +131,18 @@ Token Lexer::next()
         }
 
         switch (c) {
-        case '.':  return Token{Tok::Dot,    "", line_};
-        case '(':  return Token{Tok::LParen, "", line_};
-        case ')':  return Token{Tok::RParen, "", line_};
-        case '=':  return Token{Tok::Eq,     "", line_};
-        case '\\': return Token{Tok::Lambda, "", line_};
+        case '.':  return Token{Tok::Dot,    line_};
+        case '(':  return Token{Tok::LParen, line_};
+        case ')':  return Token{Tok::RParen, line_};
+        case '=':  return Token{Tok::Eq,     line_};
+        case '\\': return Token{Tok::Lambda, line_};
         default:   break;
         }
 
         /* The entire byte-class problem of the flex version, in one line. */
         if (c == LAMBDA_LEAD && peek() == LAMBDA_TAIL) {
             get();
-            return Token{Tok::Lambda, "", line_};
+            return Token{Tok::Lambda, line_};
         }
 
         if (c == LAMBDA_LEAD && !is_continuation(peek())) {
